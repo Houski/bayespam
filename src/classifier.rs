@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io;
+use std::io::Read;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{from_reader, to_writer, to_writer_pretty};
@@ -29,8 +30,8 @@ impl Classifier {
     }
 
     /// Build a new classifier with a pre-trained model loaded from `file`.
-    pub fn new_from_pre_trained(file: &mut File) -> Result<Self, io::Error> {
-        let pre_trained_model = from_reader(file)?;
+    pub fn new_from_pre_trained(file: &str) -> Result<Self, io::Error> {
+        let pre_trained_model = serde_json::de::from_str(file)?;
         Ok(pre_trained_model)
     }
 
@@ -144,7 +145,13 @@ impl Classifier {
 /// The higher the score, the stronger the liklihood that `msg` is a spam is.
 pub fn score(msg: &str) -> Result<f32, io::Error> {
     let mut file = File::open(DEFAULT_FILE_PATH)?;
-    Classifier::new_from_pre_trained(&mut file).map(|classifier| classifier.score(msg))
+    // convert file to &str
+
+    let mut file_content = String::new();
+
+    file.read_to_string(&mut file_content)?;
+
+    Classifier::new_from_pre_trained(&file_content).map(|classifier| classifier.score(msg))
 }
 
 /// Identify whether `msg` is a spam or not, based on a pre-trained model.
